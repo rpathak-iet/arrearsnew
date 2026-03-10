@@ -526,36 +526,32 @@
         }
         .close-popup:hover { color: #000; }
         
-        /* Increment month dropdowns for 7th Pay */
-        .increment-header-row {
-            background: #f0f6ff;
-            border-bottom: 2px solid #1e3a8a;
-        }
-        .increment-header-due {
-            background: rgba(255, 255, 0, 0.6);
-            font-size: 0.7rem;
-            padding: 4px 2px;
-            white-space: nowrap;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .increment-header-drawn {
-            background: rgba(0, 255, 0, 0.6);
-            font-size: 0.7rem;
-            padding: 4px 2px;
-            white-space: nowrap;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .increment-select {
-            border: 2px solid #1e3a8a;
-            border-radius: 20px;
-            padding: 2px 5px;
+        /* Increment button styles */
+        .increment-btn {
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 3px 8px;
             font-size: 0.6rem;
             font-weight: 600;
-            background: white;
-            width: 90px;
-            text-align: center;
+            cursor: pointer;
+            white-space: nowrap;
+            width: auto;
+            min-width: 60px;
+        }
+        .increment-btn:hover {
+            background: #15306b;
+        }
+        .increment-btn.small {
+            padding: 2px 5px;
+            font-size: 0.55rem;
+        }
+        .increment-btn-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
         }
         @media print {
             .no-print, .toolstrip, .delete-btn, .note, .message-box, .cpc-selector, .copyright-footer, .data-controls, .modal-overlay { display: none; }
@@ -623,7 +619,7 @@
     <div class="toolstrip no-print">
         <button id="addRowBtn" class="primary">➕ new row</button>
         <button id="copyPrevBtn">📋 copy previous</button>
-        <button id="applyIncrementBtn" class="primary">📈 Apply Increment</button>
+        <button id="applyIncrementBtn" class="primary" style="display: none;">📈 Apply Increment</button>
         <button id="loadFromDateBtn" class="primary">📅 Load months from start date</button>
         <span class="spacer"></span>
         <button id="exportExcelBtn">📥 Excel (XLSX)</button>
@@ -652,7 +648,7 @@
         ✅ <strong>Save/Load:</strong> Use the buttons in the increment row to save/load data from your browser. Modern popup for selection.<br>
         ✅ <strong>Clear Saved:</strong> Select which saved data to delete from the popup.<br>
         ✅ <strong>Download PDF:</strong> Generates PDF from saved data with proper formatting (HRA? subcolumns hidden, GP1 shown as GP).<br>
-        ✅ <strong>7th Pay Increment:</strong> Separate increment month dropdowns for DUE and DRAWN columns appear above respective columns when 7th Pay is selected.
+        ✅ <strong>7th Pay Increment:</strong> Click the "INC" button in July/January rows under DUE/DRAWN columns to apply 3% increment.
     </div>
 
     <!-- ********** PROFESSIONAL COPYRIGHT FOOTER WITH ICON ********** -->
@@ -730,10 +726,6 @@
     let currentModalCallback = null;
     let selectedItemKey = null;
     
-    // Global variables for increment months for 7th Pay
-    let dueIncrementMonth = 'July';
-    let drawnIncrementMonth = 'July';
-
     // Format number in Indian style (with commas)
     function formatIndianNumber(num) {
         if (num === null || num === undefined || isNaN(num)) return '0';
@@ -1088,7 +1080,7 @@
             `;
         } else {
             thead.innerHTML = `
-                <tr class="increment-header-row">
+                <tr>
                     <th rowspan="3">Month & Days</th>
                     <th rowspan="3">DA limit</th>
                     <th colspan="8" class="section-header">DUE</th>
@@ -1097,9 +1089,9 @@
                     <th rowspan="3">DA Rate<br>Drawn</th>
                     <th rowspan="3" style="width:35px;">⚙️</th>
                 </tr>
-                <tr class="increment-header-row">
-                    <th colspan="8" class="increment-header-due">Increment Month: <select id="dueIncrementSelect" class="increment-select"><option value="January">January</option><option value="July" ${dueIncrementMonth === 'July' ? 'selected' : ''}>July</option></select></th>
-                    <th colspan="8" class="increment-header-drawn">Increment Month: <select id="drawnIncrementSelect" class="increment-select"><option value="January">January</option><option value="July" ${drawnIncrementMonth === 'July' ? 'selected' : ''}>July</option></select></th>
+                <tr>
+                    <th colspan="8" class="section-header">Click INC button in July/January rows</th>
+                    <th colspan="8" class="section-header">Click INC button in July/January rows</th>
                     <th colspan="7"></th>
                 </tr>
                 <tr>
@@ -1111,25 +1103,60 @@
                     <th class="diff-col">PF S</th><th class="diff-col">UN C</th><th class="diff-col">NET</th>
                 </tr>
             `;
-            
-            // Add event listeners to the increment selects
-            setTimeout(() => {
-                const dueSelect = document.getElementById('dueIncrementSelect');
-                const drawnSelect = document.getElementById('drawnIncrementSelect');
-                
-                if (dueSelect) {
-                    dueSelect.addEventListener('change', function() {
-                        dueIncrementMonth = this.value;
-                    });
-                }
-                
-                if (drawnSelect) {
-                    drawnSelect.addEventListener('change', function() {
-                        drawnIncrementMonth = this.value;
-                    });
-                }
-            }, 100);
         }
+    }
+
+    // Function to apply increment to a specific row
+    function applyIncrementToRow(row, columnType) {
+        const cpcType = document.getElementById('cpcType').value;
+        if (cpcType !== '7thPay') return;
+        
+        const monthSel = row.querySelector('.month-cell');
+        const currentMonthVal = monthSel.value;
+        const prevMonthVal = getPrevMonth(currentMonthVal);
+        
+        // Find the previous row
+        const rows = Array.from(document.querySelectorAll('#tableBody tr'));
+        const prevRow = rows.find(r => r.querySelector('.month-cell').value === prevMonthVal);
+        
+        if (!prevRow) {
+            alert(`No previous month (${prevMonthVal}) found to apply increment from.`);
+            return;
+        }
+        
+        if (columnType === 'due') {
+            const prevDuePay = parseFloat(prevRow.querySelector('.due-pay').value) || 0;
+            let newDuePay = prevDuePay * 1.03;
+            newDuePay = roundValue(newDuePay, 'PAY_MAIN', currentMonthVal);
+            row.querySelector('.due-pay').value = newDuePay;
+            
+            // Copy HRA and PF rate from previous row
+            if (prevRow.querySelector('.due-hra')) {
+                row.querySelector('.due-hra').value = prevRow.querySelector('.due-hra').value;
+            }
+            const prevDuePfRate = prevRow.querySelector('.due-pf-rate');
+            const newDuePfRate = row.querySelector('.due-pf-rate');
+            if (prevDuePfRate && newDuePfRate) {
+                newDuePfRate.value = prevDuePfRate.value;
+            }
+        } else if (columnType === 'drawn') {
+            const prevDrawnPay = parseFloat(prevRow.querySelector('.drawn-pay').value) || 0;
+            let newDrawnPay = prevDrawnPay * 1.03;
+            newDrawnPay = roundValue(newDrawnPay, 'PAY_MAIN', currentMonthVal);
+            row.querySelector('.drawn-pay').value = newDrawnPay;
+            
+            // Copy HRA and PF rate from previous row
+            if (prevRow.querySelector('.drawn-hra')) {
+                row.querySelector('.drawn-hra').value = prevRow.querySelector('.drawn-hra').value;
+            }
+            const prevDrawnPfRate = prevRow.querySelector('.drawn-pf-rate');
+            const newDrawnPfRate = row.querySelector('.drawn-pf-rate');
+            if (prevDrawnPfRate && newDrawnPfRate) {
+                newDrawnPfRate.value = prevDrawnPfRate.value;
+            }
+        }
+        
+        recalcRow(row);
     }
 
     function createEmptyRow(monthVal = null) {
@@ -1196,6 +1223,40 @@
                 <td><button class="delete-btn" title="remove">✕</button></td>
             `;
         } else {
+            // For 7th Pay, check if this is a July or January row to add increment buttons
+            const monthName = monthVal ? monthVal.split('-')[1] : '';
+            const monthIndex = parseInt(monthName) - 1;
+            const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            const monthAbbr = monthIndex >= 0 ? monthNames[monthIndex] : '';
+            
+            const isIncrementMonth = monthAbbr === 'JUL' || monthAbbr === 'JAN';
+            
+            // Create DUE column with possible increment button
+            let duePayCell = '';
+            if (isIncrementMonth) {
+                duePayCell = `
+                    <td class="due-col increment-btn-container">
+                        <input type="number" class="due-pay" value="0" step="100" min="0" style="width:70%;">
+                        <button class="increment-btn due-increment-btn" title="Apply 3% increment from previous month">INC</button>
+                    </td>
+                `;
+            } else {
+                duePayCell = `<td class="due-col"><input type="number" class="due-pay" value="0" step="100" min="0"></td>`;
+            }
+            
+            // Create DRAWN column with possible increment button
+            let drawnPayCell = '';
+            if (isIncrementMonth) {
+                drawnPayCell = `
+                    <td class="drawn-col increment-btn-container">
+                        <input type="number" class="drawn-pay" value="0" step="100" min="0" style="width:70%;">
+                        <button class="increment-btn drawn-increment-btn" title="Apply 3% increment from previous month">INC</button>
+                    </td>
+                `;
+            } else {
+                drawnPayCell = `<td class="drawn-col"><input type="number" class="drawn-pay" value="0" step="100" min="0"></td>`;
+            }
+            
             tr.innerHTML = `
                 <td class="month-with-days">
                     <select class="month-cell" style="min-width:70px;">${monthOptions}</select>
@@ -1203,7 +1264,7 @@
                 </td>
                 <td><input type="number" class="dalimit-cell" readonly value="0" style="background:#f2f7ff;"></td>
                 <!-- DUE -->
-                <td class="due-col"><input type="number" class="due-pay" value="0" step="100" min="0"></td>
+                ${duePayCell}
                 <td class="due-col"><input type="number" class="due-pay2" readonly value="0"></td>
                 <td class="due-col"><input type="number" class="due-da" readonly value="0"></td>
                 <td class="due-col"><input type="number" class="due-hra" value="0" step="10" min="0" placeholder="HRA"></td>
@@ -1219,7 +1280,7 @@
                 <td class="due-col"><input type="number" class="due-pfs" readonly value="0"></td>
                 <td class="due-col"><input type="number" class="due-unc" readonly value="0"></td>
                 <!-- DRAWN -->
-                <td class="drawn-col"><input type="number" class="drawn-pay" value="0" step="100" min="0"></td>
+                ${drawnPayCell}
                 <td class="drawn-col"><input type="number" class="drawn-pay2" readonly value="0"></td>
                 <td class="drawn-col"><input type="number" class="drawn-da" readonly value="0"></td>
                 <td class="drawn-col"><input type="number" class="drawn-hra" value="0" step="10" min="0" placeholder="HRA"></td>
@@ -1272,6 +1333,17 @@
             if (drawnPfRate) drawnPfRate.addEventListener('change', () => recalcRow(tr));
             if (dueHra) dueHra.addEventListener('input', () => recalcRow(tr));
             if (drawnHra) drawnHra.addEventListener('input', () => recalcRow(tr));
+            
+            // Add increment button listeners if they exist
+            const dueIncrementBtn = tr.querySelector('.due-increment-btn');
+            const drawnIncrementBtn = tr.querySelector('.drawn-increment-btn');
+            
+            if (dueIncrementBtn) {
+                dueIncrementBtn.addEventListener('click', () => applyIncrementToRow(tr, 'due'));
+            }
+            if (drawnIncrementBtn) {
+                drawnIncrementBtn.addEventListener('click', () => applyIncrementToRow(tr, 'drawn'));
+            }
         }
 
         monthSel.addEventListener('change', () => {
@@ -1367,133 +1439,6 @@
         tbody.innerHTML = '';
         tbody.appendChild(createEmptyRow(startMonthVal));
         alert(`Initialized with month: ${startMonthVal}`);
-        scrollToNewRow();
-    }
-
-    function applyIncrementToAllFuture() {
-        const rows = Array.from(document.querySelectorAll('#tableBody tr'));
-        const cpcType = document.getElementById('cpcType').value;
-        
-        if (rows.length < 2) { 
-            alert('Need at least two rows.'); 
-            return; 
-        }
-
-        const monthRowMap = new Map();
-        rows.forEach(r => { 
-            monthRowMap.set(r.querySelector('.month-cell').value, r); 
-        });
-
-        if (cpcType === '6thPay') {
-            // For 6th Pay, use the old method
-            const incrementMonth = document.getElementById('incrementMonth').value;
-            const targetMonthName = incrementMonth === 'January' ? 'JAN' : 'JUL';
-            
-            rows.forEach(row => {
-                const monthSel = row.querySelector('.month-cell');
-                const currentMonthVal = monthSel.value;
-                const year = getYearFromMonthVal(currentMonthVal);
-                const monthName = monthSel.options[monthSel.selectedIndex].text.split('-')[0];
-
-                if (monthName === targetMonthName) {
-                    const prevMonthVal = getPrevMonth(currentMonthVal);
-                    const prevRow = monthRowMap.get(prevMonthVal);
-                    
-                    if (prevRow) {
-                        const prevDuePay = parseFloat(prevRow.querySelector('.due-pay').value) || 0;
-                        const prevDuePay2 = parseFloat(prevRow.querySelector('.due-pay2').value) || 0;
-                        const prevDueGp1 = parseFloat(prevRow.querySelector('.due-gp1').value) || 0;
-                        
-                        let incrementAmount = 0.03 * (prevDuePay2 + prevDueGp1);
-                        
-                        let newDuePay = prevDuePay + incrementAmount;
-                        newDuePay = roundValue(newDuePay, 'INCREMENT', currentMonthVal);
-                        row.querySelector('.due-pay').value = newDuePay;
-                        
-                        const prevDrawnPay = parseFloat(prevRow.querySelector('.drawn-pay').value) || 0;
-                        const prevDrawnPay2 = parseFloat(prevRow.querySelector('.drawn-pay2').value) || 0;
-                        const prevDrawnGp1 = parseFloat(prevRow.querySelector('.drawn-gp1').value) || 0;
-                        
-                        incrementAmount = 0.03 * (prevDrawnPay2 + prevDrawnGp1);
-                        let newDrawnPay = prevDrawnPay + incrementAmount;
-                        newDrawnPay = roundValue(newDrawnPay, 'INCREMENT', currentMonthVal);
-                        row.querySelector('.drawn-pay').value = newDrawnPay;
-                        
-                        row.querySelector('.due-gp').value = prevRow.querySelector('.due-gp').value;
-                        row.querySelector('.drawn-gp').value = prevRow.querySelector('.drawn-gp').value;
-                        
-                        // Copy HRA? dropdown selections
-                        const prevDueHraSelect = prevRow.querySelector('.due-hra-select');
-                        const prevDrawnHraSelect = prevRow.querySelector('.drawn-hra-select');
-                        const newDueHraSelect = row.querySelector('.due-hra-select');
-                        const newDrawnHraSelect = row.querySelector('.drawn-hra-select');
-                        if (prevDueHraSelect && newDueHraSelect) {
-                            newDueHraSelect.value = prevDueHraSelect.value;
-                        }
-                        if (prevDrawnHraSelect && newDrawnHraSelect) {
-                            newDrawnHraSelect.value = prevDrawnHraSelect.value;
-                        }
-                    }
-                    recalcRow(row);
-                }
-            });
-        } else {
-            // For 7th Pay, use separate increment months
-            const dueTargetMonthName = dueIncrementMonth === 'January' ? 'JAN' : 'JUL';
-            const drawnTargetMonthName = drawnIncrementMonth === 'January' ? 'JAN' : 'JUL';
-            
-            rows.forEach(row => {
-                const monthSel = row.querySelector('.month-cell');
-                const currentMonthVal = monthSel.value;
-                const year = getYearFromMonthVal(currentMonthVal);
-                const monthName = monthSel.options[monthSel.selectedIndex].text.split('-')[0];
-                const prevMonthVal = getPrevMonth(currentMonthVal);
-                const prevRow = monthRowMap.get(prevMonthVal);
-                
-                // Apply increment for DUE column based on due increment month
-                if (prevRow && monthName === dueTargetMonthName) {
-                    const prevDuePay = parseFloat(prevRow.querySelector('.due-pay').value) || 0;
-                    let newDuePay = prevDuePay * 1.03;
-                    newDuePay = roundValue(newDuePay, 'PAY_MAIN', currentMonthVal);
-                    row.querySelector('.due-pay').value = newDuePay;
-                }
-                
-                // Apply increment for DRAWN column based on drawn increment month
-                if (prevRow && monthName === drawnTargetMonthName) {
-                    const prevDrawnPay = parseFloat(prevRow.querySelector('.drawn-pay').value) || 0;
-                    let newDrawnPay = prevDrawnPay * 1.03;
-                    newDrawnPay = roundValue(newDrawnPay, 'PAY_MAIN', currentMonthVal);
-                    row.querySelector('.drawn-pay').value = newDrawnPay;
-                }
-                
-                // Copy HRA values
-                if (prevRow) {
-                    if (prevRow.querySelector('.due-hra')) {
-                        row.querySelector('.due-hra').value = prevRow.querySelector('.due-hra').value;
-                    }
-                    if (prevRow.querySelector('.drawn-hra')) {
-                        row.querySelector('.drawn-hra').value = prevRow.querySelector('.drawn-hra').value;
-                    }
-                    
-                    // Copy PF rates
-                    const prevDuePfRate = prevRow.querySelector('.due-pf-rate');
-                    const prevDrawnPfRate = prevRow.querySelector('.drawn-pf-rate');
-                    const newDuePfRate = row.querySelector('.due-pf-rate');
-                    const newDrawnPfRate = row.querySelector('.drawn-pf-rate');
-                    
-                    if (prevDuePfRate && newDuePfRate) {
-                        newDuePfRate.value = prevDuePfRate.value;
-                    }
-                    if (prevDrawnPfRate && newDrawnPfRate) {
-                        newDrawnPfRate.value = prevDrawnPfRate.value;
-                    }
-                }
-                
-                recalcRow(row);
-            });
-        }
-        
-        alert(`Increment applied successfully for ${cpcType}. DUE: ${dueIncrementMonth}, DRAWN: ${drawnIncrementMonth}`);
         scrollToNewRow();
     }
 
@@ -1742,14 +1687,6 @@
             toDate: document.getElementById('toDate').value
         };
         
-        // Add increment months for 7th Pay
-        if (cpcType === '7thPay') {
-            data.dueIncrementMonth = dueIncrementMonth;
-            data.drawnIncrementMonth = drawnIncrementMonth;
-        } else {
-            data.incrementMonth = document.getElementById('incrementMonth')?.value || 'July';
-        }
-        
         return data;
     }
 
@@ -1933,21 +1870,6 @@
                 document.getElementById('fromDate').value = data.fromDate || (data.cpcType === '6thPay' ? '2006-01-01' : '2024-01-01');
                 document.getElementById('toDate').value = data.toDate || (data.cpcType === '6thPay' ? '2015-12-31' : '2025-12-31');
                 
-                // Set increment months
-                if (data.cpcType === '7thPay') {
-                    dueIncrementMonth = data.dueIncrementMonth || 'July';
-                    drawnIncrementMonth = data.drawnIncrementMonth || 'July';
-                    
-                    // Update the selects in header if they exist
-                    const dueSelect = document.getElementById('dueIncrementSelect');
-                    const drawnSelect = document.getElementById('drawnIncrementSelect');
-                    
-                    if (dueSelect) dueSelect.value = dueIncrementMonth;
-                    if (drawnSelect) drawnSelect.value = drawnIncrementMonth;
-                } else {
-                    document.getElementById('incrementMonth').value = data.incrementMonth || 'July';
-                }
-                
                 // Load table data exactly as saved
                 if (data.tableData && Array.isArray(data.tableData)) {
                     data.tableData.forEach(row => {
@@ -1967,173 +1889,34 @@
                             monthValue = data.cpcType === '6thPay' ? '2006-01' : '2016-01';
                         }
                         
-                        // Create a new row but DON'T use createEmptyRow as it sets default values
-                        // Instead, create a custom row with the saved values
-                        const newRow = document.createElement('tr');
-                        const cpcType = data.cpcType;
+                        // Create a new row
+                        const newRow = createEmptyRow(monthValue);
                         
-                        // Build the row HTML based on CPC type
-                        if (cpcType === '6thPay') {
-                            // Generate month options with the saved month selected
-                            const monthOptions = generateMonthOptions(monthValue, cpcType);
+                        // Set all values
+                        newRow.querySelector('.due-pay').value = row.duePay || 0;
+                        newRow.querySelector('.drawn-pay').value = row.drawnPay || 0;
+                        
+                        if (data.cpcType === '6thPay') {
+                            newRow.querySelector('.due-gp').value = row.dueGp || 0;
+                            newRow.querySelector('.drawn-gp').value = row.drawnGp || 0;
                             
-                            newRow.innerHTML = `
-                                <td class="month-with-days">
-                                    <select class="month-cell" style="min-width:70px;">${monthOptions}</select>
-                                    <input type="number" class="days-in-month" value="${row.days}" step="1" min="1" style="width:45px;">
-                                </td>
-                                <td><input type="number" class="dalimit-cell" readonly value="${row.daLimit}" style="background:#f2f7ff;"></td>
-                                <!-- DUE -->
-                                <td class="due-col"><input type="number" class="due-pay" value="${row.duePay}" step="100" min="0"></td>
-                                <td class="due-col gp-column"><input type="number" class="due-gp" value="${row.dueGp}" step="10" min="0"></td>
-                                <td class="due-col"><input type="number" class="due-pay2" readonly value="${row.duePay2}"></td>
-                                <td class="due-col gp-column"><input type="number" class="due-gp1" readonly value="${row.dueGp1}"></td>
-                                <td class="due-col"><input type="number" class="due-da" readonly value="${row.dueDa}"></td>
-                                <!-- HRA? Dropdown -->
-                                <td class="due-col">
-                                    <select class="hra-select due-hra-select" style="width:100%; font-size:0.6rem;">
-                                        <option value="No" ${row.dueHraSelect === 'No' ? 'selected' : ''}>No</option>
-                                        <option value="Yes" ${row.dueHraSelect === 'Yes' ? 'selected' : ''}>Yes</option>
-                                    </select>
-                                </td>
-                                <td class="due-col"><input type="number" class="due-hra" readonly value="${row.dueHra}"></td>
-                                <td class="due-col"><input type="number" class="due-total" readonly value="${row.dueTotal}"></td>
-                                <td class="due-col"><input type="number" class="due-pfs" readonly value="${row.duePfs}"></td>
-                                <td class="due-col"><input type="number" class="due-unc" readonly value="${row.dueUnc}"></td>
-                                <!-- DRAWN -->
-                                <td class="drawn-col"><input type="number" class="drawn-pay" value="${row.drawnPay}" step="100" min="0"></td>
-                                <td class="drawn-col gp-column"><input type="number" class="drawn-gp" value="${row.drawnGp}" step="10" min="0"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-pay2" readonly value="${row.drawnPay2}"></td>
-                                <td class="drawn-col gp-column"><input type="number" class="drawn-gp1" readonly value="${row.drawnGp1}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-da" readonly value="${row.drawnDa}"></td>
-                                <!-- HRA? Dropdown -->
-                                <td class="drawn-col">
-                                    <select class="hra-select drawn-hra-select" style="width:100%; font-size:0.6rem;">
-                                        <option value="No" ${row.drawnHraSelect === 'No' ? 'selected' : ''}>No</option>
-                                        <option value="Yes" ${row.drawnHraSelect === 'Yes' ? 'selected' : ''}>Yes</option>
-                                    </select>
-                                </td>
-                                <td class="drawn-col"><input type="number" class="drawn-hra" readonly value="${row.drawnHra}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-total" readonly value="${row.drawnTotal}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-pfs" readonly value="${row.drawnPfs}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-unc" readonly value="${row.drawnUnc}"></td>
-                                <!-- DIFFERENCE -->
-                                <td class="diff-col"><input type="number" class="diff-pay" readonly value="${row.diffPay}"></td>
-                                <td class="diff-col gp-column"><input type="number" class="diff-gp" readonly value="${row.diffGp}"></td>
-                                <td class="diff-col"><input type="number" class="diff-da" readonly value="${row.diffDa}"></td>
-                                <td class="diff-col"><input type="number" class="diff-hra" readonly value="${row.diffHra}"></td>
-                                <td class="diff-col"><input type="number" class="diff-total" readonly value="${row.diffTotal}"></td>
-                                <td class="diff-col"><input type="number" class="diff-pfs" readonly value="${row.diffPfs}"></td>
-                                <td class="diff-col"><input type="number" class="diff-unc" readonly value="${row.diffUnc}"></td>
-                                <td class="diff-col"><input type="number" class="diff-net" readonly value="${row.diffNet}"></td>
-                                <td><input type="number" class="da-rate-drawn" readonly value="${row.daRate}" style="background:#f0ead0;"></td>
-                                <td><button class="delete-btn" title="remove">✕</button></td>
-                            `;
-                        } else {
-                            // Generate month options with the saved month selected
-                            const monthOptions = generateMonthOptions(monthValue, cpcType);
-                            
-                            newRow.innerHTML = `
-                                <td class="month-with-days">
-                                    <select class="month-cell" style="min-width:70px;">${monthOptions}</select>
-                                    <input type="number" class="days-in-month" value="${row.days}" step="1" min="1" style="width:45px;">
-                                </td>
-                                <td><input type="number" class="dalimit-cell" readonly value="${row.daLimit}" style="background:#f2f7ff;"></td>
-                                <!-- DUE -->
-                                <td class="due-col"><input type="number" class="due-pay" value="${row.duePay}" step="100" min="0"></td>
-                                <td class="due-col"><input type="number" class="due-pay2" readonly value="${row.duePay2}"></td>
-                                <td class="due-col"><input type="number" class="due-da" readonly value="${row.dueDa}"></td>
-                                <td class="due-col"><input type="number" class="due-hra" value="${row.dueHra}" step="10" min="0" placeholder="HRA"></td>
-                                <td class="due-col"><input type="number" class="due-total" readonly value="${row.dueTotal}"></td>
-                                <!-- PF Rate Dropdown Column -->
-                                <td class="due-col">
-                                    <select class="pf-rate-formula due-pf-rate" style="width:100%; font-size:0.6rem;">
-                                        <option value="0.0833*PAY2" ${row.duePfRate === '0.0833*PAY2' ? 'selected' : ''}>0.0833*PAY2</option>
-                                        <option value="0.0833*(PAY2+DA)" ${row.duePfRate === '0.0833*(PAY2+DA)' ? 'selected' : ''}>0.0833*(PAY2+DA)</option>
-                                        <option value="0.10*PAY2" ${row.duePfRate === '0.10*PAY2' ? 'selected' : ''}>0.10*PAY2</option>
-                                        <option value="0.10*(PAY2+DA)" ${row.duePfRate === '0.10*(PAY2+DA)' ? 'selected' : ''}>0.10*(PAY2+DA)</option>
-                                    </select>
-                                </td>
-                                <td class="due-col"><input type="number" class="due-pfs" readonly value="${row.duePfs}"></td>
-                                <td class="due-col"><input type="number" class="due-unc" readonly value="${row.dueUnc}"></td>
-                                <!-- DRAWN -->
-                                <td class="drawn-col"><input type="number" class="drawn-pay" value="${row.drawnPay}" step="100" min="0"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-pay2" readonly value="${row.drawnPay2}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-da" readonly value="${row.drawnDa}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-hra" value="${row.drawnHra}" step="10" min="0" placeholder="HRA"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-total" readonly value="${row.drawnTotal}"></td>
-                                <!-- PF Rate Dropdown Column -->
-                                <td class="drawn-col">
-                                    <select class="pf-rate-formula drawn-pf-rate" style="width:100%; font-size:0.6rem;">
-                                        <option value="0.0833*PAY2" ${row.drawnPfRate === '0.0833*PAY2' ? 'selected' : ''}>0.0833*PAY2</option>
-                                        <option value="0.0833*(PAY2+DA)" ${row.drawnPfRate === '0.0833*(PAY2+DA)' ? 'selected' : ''}>0.0833*(PAY2+DA)</option>
-                                        <option value="0.10*PAY2" ${row.drawnPfRate === '0.10*PAY2' ? 'selected' : ''}>0.10*PAY2</option>
-                                        <option value="0.10*(PAY2+DA)" ${row.drawnPfRate === '0.10*(PAY2+DA)' ? 'selected' : ''}>0.10*(PAY2+DA)</option>
-                                    </select>
-                                </td>
-                                <td class="drawn-col"><input type="number" class="drawn-pfs" readonly value="${row.drawnPfs}"></td>
-                                <td class="drawn-col"><input type="number" class="drawn-unc" readonly value="${row.drawnUnc}"></td>
-                                <!-- DIFFERENCE -->
-                                <td class="diff-col"><input type="number" class="diff-pay" readonly value="${row.diffPay}"></td>
-                                <td class="diff-col"><input type="number" class="diff-da" readonly value="${row.diffDa}"></td>
-                                <td class="diff-col"><input type="number" class="diff-hra" readonly value="${row.diffHra}"></td>
-                                <td class="diff-col"><input type="number" class="diff-total" readonly value="${row.diffTotal}"></td>
-                                <td class="diff-col"><input type="number" class="diff-pfs" readonly value="${row.diffPfs}"></td>
-                                <td class="diff-col"><input type="number" class="diff-unc" readonly value="${row.diffUnc}"></td>
-                                <td class="diff-col"><input type="number" class="diff-net" readonly value="${row.diffNet}"></td>
-                                <td><input type="number" class="da-rate-drawn" readonly value="${row.daRate}" style="background:#f0ead0;"></td>
-                                <td><button class="delete-btn" title="remove">✕</button></td>
-                            `;
-                        }
-                        
-                        // Now attach all event listeners
-                        const monthSelect = newRow.querySelector('.month-cell');
-                        const daysInput = newRow.querySelector('.days-in-month');
-                        const duePay = newRow.querySelector('.due-pay');
-                        const drawnPay = newRow.querySelector('.drawn-pay');
-                        
-                        // Month change event
-                        monthSelect.addEventListener('change', () => {
-                            daysInput.value = getDaysInMonth(monthSelect.value);
-                            recalcRow(newRow);
-                        });
-                        
-                        // Input events
-                        daysInput.addEventListener('input', () => recalcRow(newRow));
-                        duePay.addEventListener('input', () => recalcRow(newRow));
-                        drawnPay.addEventListener('input', () => recalcRow(newRow));
-                        
-                        if (cpcType === '6thPay') {
-                            const dueGp = newRow.querySelector('.due-gp');
-                            const drawnGp = newRow.querySelector('.drawn-gp');
                             const dueHraSelect = newRow.querySelector('.due-hra-select');
                             const drawnHraSelect = newRow.querySelector('.drawn-hra-select');
-                            
-                            if (dueGp) dueGp.addEventListener('input', () => recalcRow(newRow));
-                            if (drawnGp) drawnGp.addEventListener('input', () => recalcRow(newRow));
-                            if (dueHraSelect) dueHraSelect.addEventListener('change', () => recalcRow(newRow));
-                            if (drawnHraSelect) drawnHraSelect.addEventListener('change', () => recalcRow(newRow));
+                            if (dueHraSelect) dueHraSelect.value = row.dueHraSelect || 'No';
+                            if (drawnHraSelect) drawnHraSelect.value = row.drawnHraSelect || 'No';
                         } else {
                             const duePfRate = newRow.querySelector('.due-pf-rate');
                             const drawnPfRate = newRow.querySelector('.drawn-pf-rate');
                             const dueHra = newRow.querySelector('.due-hra');
                             const drawnHra = newRow.querySelector('.drawn-hra');
                             
-                            if (duePfRate) duePfRate.addEventListener('change', () => recalcRow(newRow));
-                            if (drawnPfRate) drawnPfRate.addEventListener('change', () => recalcRow(newRow));
-                            if (dueHra) dueHra.addEventListener('input', () => recalcRow(newRow));
-                            if (drawnHra) drawnHra.addEventListener('input', () => recalcRow(newRow));
+                            if (duePfRate) duePfRate.value = row.duePfRate || '0.0833*(PAY2+DA)';
+                            if (drawnPfRate) drawnPfRate.value = row.drawnPfRate || '0.0833*(PAY2+DA)';
+                            if (dueHra) dueHra.value = row.dueHra || 0;
+                            if (drawnHra) drawnHra.value = row.drawnHra || 0;
                         }
                         
-                        // Delete button
-                        newRow.querySelector('.delete-btn').addEventListener('click', function() {
-                            if (document.querySelectorAll('#tableBody tr').length > 1) newRow.remove();
-                            else alert('At least one row required');
-                        });
-                        
-                        // Force recalculation with the correct values
                         recalcRow(newRow);
-                        
                         tbody.appendChild(newRow);
                     });
                 }
@@ -2185,7 +1968,7 @@
         }
     }
 
-    // MODIFIED: Generate PDF from saved data with summary on last page - BLACK AND WHITE ONLY, LEGAL LANDSCAPE, FONT SIZE 8 FOR TABLE, 7 FOR TOTALS ROW, 12 FOR SUMMARY
+    // Generate PDF from saved data with summary on last page
     function downloadPDF() {
         try {
             const data = collectDataForSaving();
@@ -2289,7 +2072,6 @@
             }).replace(/\//g, '/');
             
             // Create HTML content for PDF with black and white only, no colored fonts
-            // Legal page landscape, font size 8 for table rows, 7 for totals row, 12 for summary
             const style = `
                 <style>
                     @page { size: legal landscape; margin: 0.4in; }
@@ -2326,7 +2108,6 @@
                     .summary-table td:nth-child(7) { width: 14%; }
                     .amount-words { margin-top: 20px; padding: 10px; border-top: 1px solid #000000; font-size: 12pt; text-align: center; white-space: nowrap; }
                     .page-break { page-break-after: always; }
-                    .increment-note { font-size: 8pt; font-weight: bold; text-align: center; margin: 5px 0; }
                 </style>
             `;
             
@@ -2347,11 +2128,6 @@
                     <div class="info-row"><span class="info-label">Designation:</span> <span class="info-value">${data.designation}</span></div>
                 </div>
             `;
-            
-            // Add increment month note for 7th Pay
-            if (!is6thPay) {
-                htmlContent += `<div class="increment-note">Increment Months - DUE: ${dueIncrementMonth}, DRAWN: ${drawnIncrementMonth}</div>`;
-            }
             
             htmlContent += `<table><thead>`;
             
@@ -2413,7 +2189,7 @@
                     </tr>`;
                 });
                 
-                // Add totals row - WITHOUT DA Rate total, with font size 7
+                // Add totals row
                 htmlContent += `<tr class="total-row">
                     <td colspan="3"><strong>TOTAL</strong></td>
                     <td><strong>${Math.round(totalDuePay)}</strong></td>
@@ -2498,7 +2274,7 @@
                     </tr>`;
                 });
                 
-                // Add totals row - WITHOUT DA Rate total, with font size 7
+                // Add totals row
                 htmlContent += `<tr class="total-row">
                     <td colspan="3"><strong>TOTAL</strong></td>
                     <td><strong>${Math.round(totalDuePay)}</strong></td>
@@ -2529,10 +2305,6 @@
             htmlContent += `
                     </tbody>
                 </table>
-                
-                <div class="footer">
-                    <p>Generated on: ${new Date().toLocaleString()}</p>
-                </div>
                 
                 <div class="page-break"></div>
                 
@@ -2576,7 +2348,21 @@
                     </div>
                 </div>
                 
-                              
+                <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+                    <div style="text-align: left;">
+                        <p>_________________________</p>
+                        <p><strong>Prepared By</strong></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p>_________________________</p>
+                        <p><strong>Authorised Signatory</strong></p>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>This is a computer generated statement</p>
+                </div>
+                
                 </body>
                 </html>
             `;
@@ -2622,13 +2408,6 @@
             const cpcType = document.getElementById('cpcType').value;
             document.getElementById('fromDate').value = cpcType === '6thPay' ? '2006-01-01' : '2024-01-01';
             document.getElementById('toDate').value = cpcType === '6thPay' ? '2015-12-31' : '2025-12-31';
-            
-            if (cpcType === '7thPay') {
-                dueIncrementMonth = 'July';
-                drawnIncrementMonth = 'July';
-            } else {
-                document.getElementById('incrementMonth').value = 'July';
-            }
             
             const defaultMonth = cpcType === '6thPay' ? '2006-01' : '2016-01';
             document.getElementById('tableBody').appendChild(createEmptyRow(defaultMonth));
@@ -2709,7 +2488,6 @@
         document.getElementById('cpcType').addEventListener('change', handleCPCChange);
         document.getElementById('addRowBtn').addEventListener('click', addNewRow);
         document.getElementById('copyPrevBtn').addEventListener('click', copyPreviousRowWithNextMonth);
-        document.getElementById('applyIncrementBtn').addEventListener('click', applyIncrementToAllFuture);
         document.getElementById('loadFromDateBtn').addEventListener('click', loadMonthsFromStartDate);
         document.getElementById('exportExcelBtn').addEventListener('click', exportExcel);
         document.getElementById('saveLocalBtn').addEventListener('click', saveToLocalStorage);
@@ -2724,7 +2502,7 @@
         // Show the custom popup alert on every load
         showStartupAlert();
         
-        showInfo('👋 Welcome! For 7th Pay, separate increment month dropdowns for DUE and DRAWN columns appear above respective columns.');
+        showInfo('👋 Welcome! For 7th Pay, click INC button in July/January rows under DUE/DRAWN columns to apply 3% increment.');
     });
 </script>
 </body>
