@@ -597,6 +597,15 @@
         </select>
     </div>
 
+    <!-- 6th Pay increment controls (hidden by default, shown when 6thPay selected) -->
+    <div id="sixthPayIncrementPanel" class="increment-row no-print" style="display: none;">
+        <label for="incrementMonth">Month of Increment:</label>
+        <select id="incrementMonth">
+            <option value="January">January</option>
+            <option value="July" selected>July</option>
+        </select>
+    </div>
+
     <div class="increment-row">
         <span id="userBadge" class="user-badge">Guest User</span>
         <div class="data-controls">
@@ -619,6 +628,7 @@
     <div class="toolstrip no-print">
         <button id="addRowBtn" class="primary">➕ new row</button>
         <button id="copyPrevBtn">📋 copy previous</button>
+        <!-- Apply Increment button for 6th Pay (will be toggled) -->
         <button id="applyIncrementBtn" class="primary" style="display: none;">📈 Apply Increment</button>
         <button id="loadFromDateBtn" class="primary">📅 Load months from start date</button>
         <span class="spacer"></span>
@@ -648,7 +658,7 @@
         ✅ <strong>Save/Load:</strong> Use the buttons in the increment row to save/load data from your browser. Modern popup for selection.<br>
         ✅ <strong>Clear Saved:</strong> Select which saved data to delete from the popup.<br>
         ✅ <strong>Download PDF:</strong> Generates PDF from saved data with proper formatting (HRA? subcolumns hidden, GP1 shown as GP).<br>
-        ✅ <strong>7th Pay Increment:</strong> Click the "INC" button in July/January rows under DUE/DRAWN columns to apply 3% increment.
+        ✅ <strong>6th Pay Increment:</strong> When 6th Pay is selected, an "Apply Increment" button appears. It applies 3% increment on PAY for all July/January rows based on previous month's (PAY2+GP1). 
     </div>
 
     <!-- ********** PROFESSIONAL COPYRIGHT FOOTER WITH ICON ********** -->
@@ -1106,7 +1116,7 @@
         }
     }
 
-    // Function to apply increment to a specific row
+    // Function to apply increment to a specific row (7th pay style)
     function applyIncrementToRow(row, columnType) {
         const cpcType = document.getElementById('cpcType').value;
         if (cpcType !== '7thPay') return;
@@ -1362,7 +1372,7 @@
         return tr;
     }
 
-    // Function to create a row from saved data (preserves exact values)
+    // Function to create a row from saved data (preserves exact values) – full version
     function createRowFromSaved(rowData, cpcType) {
         // Parse month from saved format (e.g., "JAN-2024") to value format (e.g., "2024-01")
         const monthParts = rowData.month.split('-');
@@ -1661,6 +1671,83 @@
         scrollToNewRow();
     }
 
+    // ---------- 6th Pay Bulk Increment (exactly as in 2.txt) ----------
+    function applyIncrementToAllFuture() {
+        const incrementMonth = document.getElementById('incrementMonth').value;
+        const rows = Array.from(document.querySelectorAll('#tableBody tr'));
+        const cpcType = document.getElementById('cpcType').value;
+        
+        if (cpcType !== '6thPay') {
+            alert('Increment is only applicable for 6th Pay CPC.');
+            return;
+        }
+        if (rows.length < 2) { 
+            alert('Need at least two rows to apply increment.'); 
+            return; 
+        }
+
+        const monthRowMap = new Map();
+        rows.forEach(r => { 
+            monthRowMap.set(r.querySelector('.month-cell').value, r); 
+        });
+
+        const targetMonthName = incrementMonth === 'January' ? 'JAN' : 'JUL';
+
+        rows.forEach(row => {
+            const monthSel = row.querySelector('.month-cell');
+            const currentMonthVal = monthSel.value;
+            const monthName = monthSel.options[monthSel.selectedIndex].text.split('-')[0];
+
+            if (monthName === targetMonthName) {
+                const prevMonthVal = getPrevMonth(currentMonthVal);
+                const prevRow = monthRowMap.get(prevMonthVal);
+                
+                if (prevRow) {
+                    // 6th Pay increment logic: 3% of (prev PAY2 + prev GP1) added to PAY
+                    const prevDuePay = parseFloat(prevRow.querySelector('.due-pay').value) || 0;
+                    const prevDuePay2 = parseFloat(prevRow.querySelector('.due-pay2').value) || 0;
+                    const prevDueGp1 = parseFloat(prevRow.querySelector('.due-gp1').value) || 0;
+                    
+                    let incrementAmount = 0.03 * (prevDuePay2 + prevDueGp1);
+                    
+                    let newDuePay = prevDuePay + incrementAmount;
+                    newDuePay = roundValue(newDuePay, 'INCREMENT', currentMonthVal);
+                    row.querySelector('.due-pay').value = newDuePay;
+                    
+                    const prevDrawnPay = parseFloat(prevRow.querySelector('.drawn-pay').value) || 0;
+                    const prevDrawnPay2 = parseFloat(prevRow.querySelector('.drawn-pay2').value) || 0;
+                    const prevDrawnGp1 = parseFloat(prevRow.querySelector('.drawn-gp1').value) || 0;
+                    
+                    incrementAmount = 0.03 * (prevDrawnPay2 + prevDrawnGp1);
+                    let newDrawnPay = prevDrawnPay + incrementAmount;
+                    newDrawnPay = roundValue(newDrawnPay, 'INCREMENT', currentMonthVal);
+                    row.querySelector('.drawn-pay').value = newDrawnPay;
+                    
+                    // Copy GP unchanged (as per 2.txt logic)
+                    row.querySelector('.due-gp').value = prevRow.querySelector('.due-gp').value;
+                    row.querySelector('.drawn-gp').value = prevRow.querySelector('.drawn-gp').value;
+                    
+                    // Copy HRA? dropdown selections
+                    const prevDueHraSelect = prevRow.querySelector('.due-hra-select');
+                    const prevDrawnHraSelect = prevRow.querySelector('.drawn-hra-select');
+                    const newDueHraSelect = row.querySelector('.due-hra-select');
+                    const newDrawnHraSelect = row.querySelector('.drawn-hra-select');
+                    if (prevDueHraSelect && newDueHraSelect) {
+                        newDueHraSelect.value = prevDueHraSelect.value;
+                    }
+                    if (prevDrawnHraSelect && newDrawnHraSelect) {
+                        newDrawnHraSelect.value = prevDrawnHraSelect.value;
+                    }
+                    
+                    recalcRow(row);
+                }
+            }
+        });
+        
+        alert(`Increment applied successfully for ${cpcType}.`);
+        scrollToNewRow();
+    }
+
     function exportExcel() {
         const rows = document.querySelectorAll('#tableBody tr');
         const cpcType = document.getElementById('cpcType').value;
@@ -1895,7 +1982,7 @@
             }
         });
 
-        const data = {
+        return {
             tableData: tableData,
             cpcType: cpcType,
             empId: document.getElementById('empId').value,
@@ -1903,10 +1990,9 @@
             designation: document.getElementById('designation').value,
             level: document.getElementById('levelField').value,
             fromDate: document.getElementById('fromDate').value,
-            toDate: document.getElementById('toDate').value
+            toDate: document.getElementById('toDate').value,
+            incrementMonth: document.getElementById('incrementMonth').value // for 6th pay
         };
-        
-        return data;
     }
 
     function showMessage(message, isSuccess) {
@@ -2088,6 +2174,9 @@
                 document.getElementById('levelField').value = data.level || 'Level 10';
                 document.getElementById('fromDate').value = data.fromDate || (data.cpcType === '6thPay' ? '2006-01-01' : '2024-01-01');
                 document.getElementById('toDate').value = data.toDate || (data.cpcType === '6thPay' ? '2015-12-31' : '2025-12-31');
+                if (data.incrementMonth) {
+                    document.getElementById('incrementMonth').value = data.incrementMonth;
+                }
                 
                 // Load table data using the custom row creator that preserves exact values
                 if (data.tableData && Array.isArray(data.tableData)) {
@@ -2096,6 +2185,9 @@
                         tbody.appendChild(newRow);
                     });
                 }
+                
+                // After loading, ensure 6th pay controls visibility
+                toggleSixthPayIncrementUI();
                 
                 showMessage(`✅ Loaded ${data.tableData.length} rows for ${data.empName} (${data.empId})`, true);
                 closeModal();
@@ -2144,7 +2236,7 @@
         }
     }
 
-    // Generate PDF from saved data with summary on last page
+    // ========== FIXED PDF GENERATION – NOW OPENS PRINT DIALOG ==========
     function downloadPDF() {
         try {
             const data = collectDataForSaving();
@@ -2247,7 +2339,7 @@
                 year: 'numeric'
             }).replace(/\//g, '/');
             
-            // Create HTML content for PDF with black and white only, no colored fonts
+            // Create HTML content for PDF with black and white only
             const style = `
                 <style>
                     @page { size: legal landscape; margin: 0.4in; }
@@ -2319,9 +2411,9 @@
                             <th rowspan="2" style="width:2.5%">DA<br>Rate</th>
                         </tr>
                         <tr>
-                            <th style="width:3%">PAY</th><th style="width:3%">GP</th><th style="width:3%">PAY</th><th style="width:3%">GP</th>
+                            <th style="width:3%">PAY</th><th style="width:3%">GP</th><th style="width:3%">PAY2</th><th style="width:3%">GP1</th>
                             <th style="width:3%">DA</th><th style="width:3%">HRA</th><th style="width:3.5%">TOTAL</th><th style="width:3%">PFS</th><th style="width:3%">UNC</th>
-                            <th style="width:3%">PAY</th><th style="width:3%">GP</th><th style="width:3%">PAY</th><th style="width:3%">GP</th>
+                            <th style="width:3%">PAY</th><th style="width:3%">GP</th><th style="width:3%">PAY2</th><th style="width:3%">GP1</th>
                             <th style="width:3%">DA</th><th style="width:3%">HRA</th><th style="width:3.5%">TOTAL</th><th style="width:3%">PFS</th><th style="width:3%">UNC</th>
                             <th style="width:3%">PAY</th><th style="width:3%">GP</th><th style="width:3%">DA</th><th style="width:3%">HRA</th>
                             <th style="width:3.5%">TOTAL</th><th style="width:3%">PFS</th><th style="width:3%">UNC</th><th style="width:3%">NET</th>
@@ -2524,36 +2616,29 @@
                     </div>
                 </div>
                 
-                
-                
                 </body>
                 </html>
             `;
             
-            // Create a blob and trigger download
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = window.URL.createObjectURL(blob);
+            // Create a new window/tab with the HTML content
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                showMessage('❌ Pop-up blocker prevented opening print window. Please allow pop-ups for this site.', false);
+                return;
+            }
             
-            // Create an iframe to print/generate PDF
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
+            // Write the HTML content to the new window
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
             
-            iframe.onload = function() {
-                setTimeout(() => {
-                    iframe.contentWindow.print();
-                    
-                    // Clean up after print dialog closes
-                    setTimeout(() => {
-                        document.body.removeChild(iframe);
-                        window.URL.revokeObjectURL(url);
-                    }, 1000);
-                }, 500);
+            // Wait for content to load then print
+            printWindow.onload = function() {
+                printWindow.print();
+                // Don't close the window immediately - let user see it
+                // printWindow.close(); // Optional: uncomment to close after print
             };
             
-            iframe.src = url;
-            
-            showMessage(`✅ PDF generated. Use browser's print dialog to save as PDF.`, true);
+            showMessage(`✅ PDF generated. Print dialog should appear. Choose "Save as PDF" to download.`, true);
             
         } catch (error) {
             console.error('PDF generation error:', error);
@@ -2571,11 +2656,25 @@
             const cpcType = document.getElementById('cpcType').value;
             document.getElementById('fromDate').value = cpcType === '6thPay' ? '2006-01-01' : '2024-01-01';
             document.getElementById('toDate').value = cpcType === '6thPay' ? '2015-12-31' : '2025-12-31';
+            document.getElementById('incrementMonth').value = 'July';
             
             const defaultMonth = cpcType === '6thPay' ? '2006-01' : '2016-01';
             document.getElementById('tableBody').appendChild(createEmptyRow(defaultMonth));
             updateTitle();
             showMessage('Form cleared', true);
+        }
+    }
+
+    function toggleSixthPayIncrementUI() {
+        const cpcType = document.getElementById('cpcType').value;
+        const sixthPayPanel = document.getElementById('sixthPayIncrementPanel');
+        const applyIncrementBtn = document.getElementById('applyIncrementBtn');
+        if (cpcType === '6thPay') {
+            sixthPayPanel.style.display = 'flex';
+            applyIncrementBtn.style.display = 'inline-flex';
+        } else {
+            sixthPayPanel.style.display = 'none';
+            applyIncrementBtn.style.display = 'none';
         }
     }
 
@@ -2592,6 +2691,7 @@
         
         currentCPCType = newCPCType;
         updateTableHeader();
+        toggleSixthPayIncrementUI();
         
         document.getElementById('tableBody').innerHTML = '';
         const defaultMonth = newCPCType === '6thPay' ? '2006-01' : '2016-01';
@@ -2637,6 +2737,7 @@
         updateTableHeader();
         const cpcType = document.getElementById('cpcType').value;
         document.getElementById('tableBody').appendChild(createEmptyRow(cpcType === '6thPay' ? '2006-01' : '2016-01'));
+        toggleSixthPayIncrementUI();
         
         // Set up modal action button
         document.getElementById('modalActionBtn').addEventListener('click', () => {
@@ -2651,6 +2752,7 @@
         document.getElementById('cpcType').addEventListener('change', handleCPCChange);
         document.getElementById('addRowBtn').addEventListener('click', addNewRow);
         document.getElementById('copyPrevBtn').addEventListener('click', copyPreviousRowWithNextMonth);
+        document.getElementById('applyIncrementBtn').addEventListener('click', applyIncrementToAllFuture);
         document.getElementById('loadFromDateBtn').addEventListener('click', loadMonthsFromStartDate);
         document.getElementById('exportExcelBtn').addEventListener('click', exportExcel);
         document.getElementById('saveLocalBtn').addEventListener('click', saveToLocalStorage);
@@ -2665,7 +2767,7 @@
         // Show the custom popup alert on every load
         showStartupAlert();
         
-        showInfo('👋 Welcome! For 7th Pay, click INC button in July/January rows under DUE/DRAWN columns to apply 3% increment.');
+        showInfo('👋 Welcome! For 7th Pay, click INC button in July/January rows under DUE/DRAWN columns to apply 3% increment. For 6th Pay, use the Apply Increment button.');
     });
 </script>
 </body>
