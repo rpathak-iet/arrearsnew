@@ -578,7 +578,7 @@
 <div class="card" id="printableArea">
     <div class="univ-header">
         <div class="header-line">Devi Ahilya Vishwavidyalaya</div>
-        <div class="header-line">Institute of Engineering & Technology</div>
+        <div class="header-line">Institute of Engineering &amp; Technology</div>
         <div class="header-line">
             Statement Showing <span id="titlePayType">7th Pay</span> Salary Difference in Revised Pay Scale
             <input type="text" placeholder="e.g., Level 10" value="Level 10" id="levelField">
@@ -657,7 +657,7 @@
         ✅ <strong>PF Rate (7th Pay):</strong> Select formula from dropdown - calculates PF S in both DUE and DRAWN columns.<br>
         ✅ <strong>Save/Load:</strong> Use the buttons in the increment row to save/load data from your browser. Modern popup for selection.<br>
         ✅ <strong>Clear Saved:</strong> Select which saved data to delete from the popup.<br>
-        ✅ <strong>Download PDF:</strong> Generates PDF from saved data with proper formatting (HRA? subcolumns hidden, GP1 shown as GP).<br>
+        ✅ <strong>Download PDF:</strong> Generates PDF from saved data with proper formatting. Summary includes TDS @31.2%, Total Deduction, and Net Payable columns.<br>
         ✅ <strong>6th Pay Increment:</strong> When 6th Pay is selected, an "Apply Increment" button appears. It applies 3% increment on PAY for all July/January rows based on previous month's (PAY2+GP1). 
     </div>
 
@@ -896,12 +896,11 @@
             let dueDa = roundToNextRupee(dueDaRaw);
             row.querySelector('.due-da').value = dueDa;
             
-            // HRA Calculation for 6th Pay based on HRA? dropdown
             const dueHraSelect = row.querySelector('.due-hra-select');
             let dueHra = 0;
             if (dueHraSelect && dueHraSelect.value === 'Yes') {
                 let dueHraRaw = 0.10 * (duePay2 + dueGp1);
-                dueHra = Math.round(dueHraRaw); // Round to nearest rupee
+                dueHra = Math.round(dueHraRaw);
             }
             row.querySelector('.due-hra').value = dueHra;
             
@@ -930,12 +929,11 @@
             let drawnDa = roundToNextRupee(drawnDaRaw);
             row.querySelector('.drawn-da').value = drawnDa;
             
-            // HRA Calculation for 6th Pay based on HRA? dropdown
             const drawnHraSelect = row.querySelector('.drawn-hra-select');
             let drawnHra = 0;
             if (drawnHraSelect && drawnHraSelect.value === 'Yes') {
                 let drawnHraRaw = 0.10 * (drawnPay2 + drawnGp1);
-                drawnHra = Math.round(drawnHraRaw); // Round to nearest rupee
+                drawnHra = Math.round(drawnHraRaw);
             }
             row.querySelector('.drawn-hra').value = drawnHra;
             
@@ -1070,7 +1068,7 @@
         if (cpcType === '6thPay') {
             thead.innerHTML = `
                 <tr>
-                    <th rowspan="3">Month & Days</th>
+                    <th rowspan="3">Month &amp; Days</th>
                     <th rowspan="3">DA limit</th>
                     <th colspan="10" class="section-header">DUE</th>
                     <th colspan="10" class="section-header">DRAWN</th>
@@ -1091,7 +1089,7 @@
         } else {
             thead.innerHTML = `
                 <tr>
-                    <th rowspan="3">Month & Days</th>
+                    <th rowspan="3">Month &amp; Days</th>
                     <th rowspan="3">DA limit</th>
                     <th colspan="8" class="section-header">DUE</th>
                     <th colspan="8" class="section-header">DRAWN</th>
@@ -1125,7 +1123,6 @@
         const currentMonthVal = monthSel.value;
         const prevMonthVal = getPrevMonth(currentMonthVal);
         
-        // Find the previous row
         const rows = Array.from(document.querySelectorAll('#tableBody tr'));
         const prevRow = rows.find(r => r.querySelector('.month-cell').value === prevMonthVal);
         
@@ -1140,7 +1137,6 @@
             newDuePay = roundValue(newDuePay, 'PAY_MAIN', currentMonthVal);
             row.querySelector('.due-pay').value = newDuePay;
             
-            // Copy HRA and PF rate from previous row
             if (prevRow.querySelector('.due-hra')) {
                 row.querySelector('.due-hra').value = prevRow.querySelector('.due-hra').value;
             }
@@ -1155,7 +1151,6 @@
             newDrawnPay = roundValue(newDrawnPay, 'PAY_MAIN', currentMonthVal);
             row.querySelector('.drawn-pay').value = newDrawnPay;
             
-            // Copy HRA and PF rate from previous row
             if (prevRow.querySelector('.drawn-hra')) {
                 row.querySelector('.drawn-hra').value = prevRow.querySelector('.drawn-hra').value;
             }
@@ -1233,14 +1228,12 @@
                 <td><button class="delete-btn" title="remove">✕</button></td>
             `;
         } else {
-            // For 7th Pay, check if this is a July or January row to add increment buttons
             const [year, monthNum] = monthVal.split('-').map(Number);
             const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
             const monthAbbr = monthNum ? monthNames[monthNum-1] : '';
             
             const isIncrementMonth = monthAbbr === 'JUL' || monthAbbr === 'JAN';
             
-            // Create DUE column with possible increment button
             let duePayCell = '';
             if (isIncrementMonth) {
                 duePayCell = `
@@ -1253,7 +1246,6 @@
                 duePayCell = `<td class="due-col"><input type="number" class="due-pay" value="0" step="100" min="0"></td>`;
             }
             
-            // Create DRAWN column with possible increment button
             let drawnPayCell = '';
             if (isIncrementMonth) {
                 drawnPayCell = `
@@ -1343,7 +1335,6 @@
             if (dueHra) dueHra.addEventListener('input', () => recalcRow(tr));
             if (drawnHra) drawnHra.addEventListener('input', () => recalcRow(tr));
             
-            // Add increment button listeners if they exist
             const dueIncrementBtn = tr.querySelector('.due-increment-btn');
             const drawnIncrementBtn = tr.querySelector('.drawn-increment-btn');
             
@@ -1372,9 +1363,7 @@
         return tr;
     }
 
-    // Function to create a row from saved data (preserves exact values) – full version
     function createRowFromSaved(rowData, cpcType) {
-        // Parse month from saved format (e.g., "JAN-2024") to value format (e.g., "2024-01")
         const monthParts = rowData.month.split('-');
         let monthValue;
         if (monthParts.length === 2) {
@@ -1390,7 +1379,6 @@
             monthValue = cpcType === '6thPay' ? '2006-01' : '2016-01';
         }
         
-        // Create a new row but we'll build it manually to ensure exact values
         const tr = document.createElement('tr');
         const monthOptions = generateMonthOptions(monthValue, cpcType);
         const defaultDays = getDaysInMonth(monthValue);
@@ -1408,7 +1396,6 @@
                 <td class="due-col"><input type="number" class="due-pay2" readonly value="${rowData.duePay2 || 0}"></td>
                 <td class="due-col gp-column"><input type="number" class="due-gp1" readonly value="${rowData.dueGp1 || 0}"></td>
                 <td class="due-col"><input type="number" class="due-da" readonly value="${rowData.dueDa || 0}"></td>
-                <!-- HRA? Dropdown -->
                 <td class="due-col">
                     <select class="hra-select due-hra-select" style="width:100%; font-size:0.6rem;">
                         <option value="No" ${rowData.dueHraSelect === 'No' ? 'selected' : ''}>No</option>
@@ -1425,7 +1412,6 @@
                 <td class="drawn-col"><input type="number" class="drawn-pay2" readonly value="${rowData.drawnPay2 || 0}"></td>
                 <td class="drawn-col gp-column"><input type="number" class="drawn-gp1" readonly value="${rowData.drawnGp1 || 0}"></td>
                 <td class="drawn-col"><input type="number" class="drawn-da" readonly value="${rowData.drawnDa || 0}"></td>
-                <!-- HRA? Dropdown -->
                 <td class="drawn-col">
                     <select class="hra-select drawn-hra-select" style="width:100%; font-size:0.6rem;">
                         <option value="No" ${rowData.drawnHraSelect === 'No' ? 'selected' : ''}>No</option>
@@ -1449,14 +1435,12 @@
                 <td><button class="delete-btn" title="remove">✕</button></td>
             `;
         } else {
-            // For 7th Pay, check if this is a July or January row to add increment buttons
             const [year, monthNum] = monthValue.split('-').map(Number);
             const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
             const monthAbbr = monthNum ? monthNames[monthNum-1] : '';
             
             const isIncrementMonth = monthAbbr === 'JUL' || monthAbbr === 'JAN';
             
-            // Create DUE column with possible increment button
             let duePayCell = '';
             if (isIncrementMonth) {
                 duePayCell = `
@@ -1469,7 +1453,6 @@
                 duePayCell = `<td class="due-col"><input type="number" class="due-pay" value="${rowData.duePay || 0}" step="100" min="0"></td>`;
             }
             
-            // Create DRAWN column with possible increment button
             let drawnPayCell = '';
             if (isIncrementMonth) {
                 drawnPayCell = `
@@ -1533,7 +1516,6 @@
             `;
         }
         
-        // Attach event listeners
         const monthSelect = tr.querySelector('.month-cell');
         const daysInput = tr.querySelector('.days-in-month');
         const duePay = tr.querySelector('.due-pay');
@@ -1569,7 +1551,6 @@
             if (dueHra) dueHra.addEventListener('input', () => recalcRow(tr));
             if (drawnHra) drawnHra.addEventListener('input', () => recalcRow(tr));
             
-            // Add increment button listeners if they exist
             const dueIncrementBtn = tr.querySelector('.due-increment-btn');
             const drawnIncrementBtn = tr.querySelector('.drawn-increment-btn');
             
@@ -1586,7 +1567,6 @@
             else alert('At least one row required');
         });
         
-        // Force recalculation to ensure all derived fields are correct
         recalcRow(tr);
         
         return tr;
@@ -1618,7 +1598,6 @@
         if (document.getElementById('cpcType').value === '6thPay') {
             newRow.querySelector('.due-gp').value = last.querySelector('.due-gp').value;
             newRow.querySelector('.drawn-gp').value = last.querySelector('.drawn-gp').value;
-            // Copy HRA? dropdown selections
             const lastDueHraSelect = last.querySelector('.due-hra-select');
             const lastDrawnHraSelect = last.querySelector('.drawn-hra-select');
             const newDueHraSelect = newRow.querySelector('.due-hra-select');
@@ -1642,7 +1621,6 @@
                 newDrawnPfRate.value = lastDrawnPfRate.value;
             }
             
-            // Copy HRA values for 7th Pay
             if (last.querySelector('.due-hra')) {
                 newRow.querySelector('.due-hra').value = last.querySelector('.due-hra').value;
             }
@@ -1671,7 +1649,7 @@
         scrollToNewRow();
     }
 
-    // ---------- 6th Pay Bulk Increment (exactly as in 2.txt) ----------
+    // ---------- 6th Pay Bulk Increment ----------
     function applyIncrementToAllFuture() {
         const incrementMonth = document.getElementById('incrementMonth').value;
         const rows = Array.from(document.querySelectorAll('#tableBody tr'));
@@ -1703,7 +1681,6 @@
                 const prevRow = monthRowMap.get(prevMonthVal);
                 
                 if (prevRow) {
-                    // 6th Pay increment logic: 3% of (prev PAY2 + prev GP1) added to PAY
                     const prevDuePay = parseFloat(prevRow.querySelector('.due-pay').value) || 0;
                     const prevDuePay2 = parseFloat(prevRow.querySelector('.due-pay2').value) || 0;
                     const prevDueGp1 = parseFloat(prevRow.querySelector('.due-gp1').value) || 0;
@@ -1723,11 +1700,9 @@
                     newDrawnPay = roundValue(newDrawnPay, 'INCREMENT', currentMonthVal);
                     row.querySelector('.drawn-pay').value = newDrawnPay;
                     
-                    // Copy GP unchanged (as per 2.txt logic)
                     row.querySelector('.due-gp').value = prevRow.querySelector('.due-gp').value;
                     row.querySelector('.drawn-gp').value = prevRow.querySelector('.drawn-gp').value;
                     
-                    // Copy HRA? dropdown selections
                     const prevDueHraSelect = prevRow.querySelector('.due-hra-select');
                     const prevDrawnHraSelect = prevRow.querySelector('.drawn-hra-select');
                     const newDueHraSelect = row.querySelector('.due-hra-select');
@@ -1991,7 +1966,7 @@
             level: document.getElementById('levelField').value,
             fromDate: document.getElementById('fromDate').value,
             toDate: document.getElementById('toDate').value,
-            incrementMonth: document.getElementById('incrementMonth').value // for 6th pay
+            incrementMonth: document.getElementById('incrementMonth').value
         };
     }
 
@@ -2026,7 +2001,6 @@
         selectedItemKey = null;
         currentModalCallback = callback;
         
-        // Build modal content
         if (items.length === 0) {
             modalBody.innerHTML = '<div class="empty-state">No saved data found</div>';
             actionBtn.style.display = 'none';
@@ -2055,11 +2029,9 @@
     }
 
     window.selectItem = function(element) {
-        // Remove selected class from all items
         document.querySelectorAll('.saved-item').forEach(item => {
             item.classList.remove('selected');
         });
-        // Add selected class to clicked item
         element.classList.add('selected');
         selectedItemKey = element.dataset.key;
     }
@@ -2071,7 +2043,6 @@
         currentModalCallback = null;
     }
 
-    // Save data to localStorage
     function saveToLocalStorage() {
         try {
             const data = collectDataForSaving();
@@ -2086,15 +2057,12 @@
                 return;
             }
             
-            // Create a unique key based on CPC type, empId and timestamp
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const saveKey = `arrears_${data.cpcType}_${data.empId}_${timestamp}`;
             const saveMetaKey = 'arrears_saved_list';
             
-            // Get existing saved list or create new one
             let savedList = JSON.parse(localStorage.getItem(saveMetaKey) || '[]');
             
-            // Add this save to the list with metadata
             savedList.push({
                 key: saveKey,
                 cpcType: data.cpcType,
@@ -2107,18 +2075,14 @@
                 timestamp: Date.now()
             });
             
-            // Keep only last 20 saves to avoid clutter
             if (savedList.length > 20) {
-                // Sort by timestamp (newest first) and keep top 20
                 savedList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 const removed = savedList.splice(20);
-                // Remove old data from localStorage
                 removed.forEach(item => {
                     localStorage.removeItem(item.key);
                 });
             }
             
-            // Save current data
             localStorage.setItem(saveKey, JSON.stringify(data));
             localStorage.setItem(saveMetaKey, JSON.stringify(savedList));
             
@@ -2128,7 +2092,6 @@
         }
     }
 
-    // Load data from localStorage with selection
     function loadFromLocalStorage() {
         try {
             const saveMetaKey = 'arrears_saved_list';
@@ -2139,10 +2102,8 @@
                 return;
             }
             
-            // Sort by date (newest first)
             savedList.sort((a, b) => new Date(b.date) - new Date(a.date));
             
-            // Open modal for selection
             openModal('Select Data to Load', savedList, (selectedKey) => {
                 const selectedSave = savedList.find(item => item.key === selectedKey);
                 if (!selectedSave) return;
@@ -2151,7 +2112,6 @@
                 
                 if (!dataJson) {
                     showMessage('❌ Saved data not found. It may have been deleted.', false);
-                    // Remove invalid entry from list
                     const updatedList = savedList.filter(s => s.key !== selectedSave.key);
                     localStorage.setItem(saveMetaKey, JSON.stringify(updatedList));
                     return;
@@ -2159,15 +2119,12 @@
                 
                 const data = JSON.parse(dataJson);
                 
-                // Clear existing table first
                 const tbody = document.getElementById('tableBody');
                 tbody.innerHTML = '';
                 
-                // Set CPC type first (this will update the header)
                 document.getElementById('cpcType').value = data.cpcType || '7thPay';
                 updateTableHeader();
                 
-                // Set all form fields
                 document.getElementById('empId').value = data.empId || '';
                 document.getElementById('empName').value = data.empName || 'Guest User';
                 document.getElementById('designation').value = data.designation || 'Guest';
@@ -2178,7 +2135,6 @@
                     document.getElementById('incrementMonth').value = data.incrementMonth;
                 }
                 
-                // Load table data using the custom row creator that preserves exact values
                 if (data.tableData && Array.isArray(data.tableData)) {
                     data.tableData.forEach(rowData => {
                         const newRow = createRowFromSaved(rowData, data.cpcType);
@@ -2186,7 +2142,6 @@
                     });
                 }
                 
-                // After loading, ensure 6th pay controls visibility
                 toggleSixthPayIncrementUI();
                 
                 showMessage(`✅ Loaded ${data.tableData.length} rows for ${data.empName} (${data.empId})`, true);
@@ -2199,7 +2154,6 @@
         }
     }
 
-    // Clear selected saved data
     function clearSavedData() {
         try {
             const saveMetaKey = 'arrears_saved_list';
@@ -2210,19 +2164,15 @@
                 return;
             }
             
-            // Sort by date (newest first)
             savedList.sort((a, b) => new Date(b.date) - new Date(a.date));
             
-            // Open modal for selection
             openModal('Select Data to Delete', savedList, (selectedKey) => {
                 const selectedSave = savedList.find(item => item.key === selectedKey);
                 if (!selectedSave) return;
                 
                 if (confirm(`Are you sure you want to delete saved data for ${selectedSave.empName} (${selectedSave.empId})?`)) {
-                    // Remove the selected item
                     localStorage.removeItem(selectedSave.key);
                     
-                    // Update the saved list
                     const updatedList = savedList.filter(item => item.key !== selectedKey);
                     localStorage.setItem(saveMetaKey, JSON.stringify(updatedList));
                     
@@ -2236,7 +2186,7 @@
         }
     }
 
-    // ========== FIXED PDF GENERATION – NOW OPENS PRINT DIALOG ==========
+    // ========== PDF GENERATION ==========
     function downloadPDF() {
         try {
             const data = collectDataForSaving();
@@ -2260,7 +2210,6 @@
             let totalDiffPay = 0, totalDiffGp = 0, totalDiffDa = 0, totalDiffHra = 0, totalDiffTotal = 0;
             let totalDiffPfs = 0, totalDiffUnc = 0, totalDiffNet = 0;
             
-            // Also calculate totals for DUE and DRAWN columns
             let totalDuePay = 0, totalDueGp = 0, totalDuePay2 = 0, totalDueGp1 = 0, totalDueDa = 0, totalDueHra = 0, totalDueTotal = 0, totalDuePfs = 0, totalDueUnc = 0;
             let totalDrawnPay = 0, totalDrawnGp = 0, totalDrawnPay2 = 0, totalDrawnGp1 = 0, totalDrawnDa = 0, totalDrawnHra = 0, totalDrawnTotal = 0, totalDrawnPfs = 0, totalDrawnUnc = 0;
             
@@ -2319,27 +2268,28 @@
                     totalDrawnTotal += row.drawnTotal || 0;
                     totalDrawnPfs += row.drawnPfs || 0;
                     totalDrawnUnc += row.drawnUnc || 0;
-                    
                 }
             });
+
+            // ── Derived summary values ──────────────────────────────────────
+            const summaryNetAmount   = totalDiffTotal - totalDiffPfs;           // Net Amount
+            const summaryGross       = totalDiffTotal + totalDiffUnc;           // Gross
+            const summaryTds         = Math.round(summaryNetAmount * 0.312 / 10) * 10; // TDS @31.2%, rounded to nearest 10
+            const summaryTotalDed    = totalDiffPfs + totalDiffUnc + summaryTds; // Total Deduction = PFS + UNC + TDS
+            const summaryNetPayable  = summaryGross - summaryTotalDed;           // Net Payable = Gross - Total Deduction
             
             // Format dates for display
             const fromDateObj = new Date(data.fromDate);
             const toDateObj = new Date(data.toDate);
             
             const fromFormatted = fromDateObj.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
+                day: '2-digit', month: '2-digit', year: 'numeric'
             }).replace(/\//g, '/');
             
             const toFormatted = toDateObj.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
+                day: '2-digit', month: '2-digit', year: 'numeric'
             }).replace(/\//g, '/');
             
-            // Create HTML content for PDF with black and white only
             const style = `
                 <style>
                     @page { size: legal landscape; margin: 0.4in; }
@@ -2364,22 +2314,27 @@
                     .summary-section h2 { font-size: 14pt; font-weight: bold; margin: 5px 0; }
                     .summary-section h3 { font-size: 12pt; font-weight: bold; margin: 5px 0; }
                     .summary-section p { font-size: 12pt; margin: 5px 0; }
-                    .summary-table { width: 90%; margin: 20px auto; font-size: 12pt; border-collapse: collapse; border: 1px solid #000000; table-layout: fixed; }
-                    .summary-table th { padding: 6px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 12pt; }
-                    .summary-table td { padding: 5px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 12pt; }
-                    .summary-table td:first-child { font-weight: bold; width: 6%; }
-                    .summary-table td:nth-child(2) { width: 27%; }
-                    .summary-table td:nth-child(3) { width: 13%; }
-                    .summary-table td:nth-child(4) { width: 11%; }
-                    .summary-table td:nth-child(5) { width: 11%; }
-                    .summary-table td:nth-child(6) { width: 13%; }
-                    .summary-table td:nth-child(7) { width: 14%; }
+                    .summary-table { width: 98%; margin: 20px auto; font-size: 11pt; border-collapse: collapse; border: 1px solid #000000; table-layout: fixed; }
+                    .summary-table th { padding: 6px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 11pt; }
+                    .summary-table td { padding: 5px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 11pt; }
+                    .summary-table td:first-child { font-weight: bold; width: 3.5%; }
+                    .summary-table td:nth-child(2) { width: 16%; text-align: left; padding-left: 6px; }
+                    .summary-table td:nth-child(3) { width: 9%; }
+                    .summary-table td:nth-child(4) { width: 7%; }
+                    .summary-table td:nth-child(5) { width: 7%; }
+                    .summary-table td:nth-child(6) { width: 9%; }
+                    .summary-table td:nth-child(7) { width: 9%; }
+                    .summary-table td:nth-child(8) { width: 12%; }
+                    .summary-table td:nth-child(9) { width: 14%; }
+                    .summary-table td:nth-child(10) { width: 13%; }
                     .amount-words { margin-top: 20px; padding: 10px; border-top: 1px solid #000000; font-size: 12pt; text-align: center; white-space: nowrap; }
                     .page-break { page-break-after: always; }
+                    .tds-col { background-color: #fff8dc; }
+                    .totalded-col { background-color: #ffe4e1; }
+                    .netpay-col { background-color: #e0ffe0; font-weight: bold; }
                 </style>
             `;
             
-            // First page - Main statement
             let htmlContent = `
                 <html>
                 <head><meta charset="UTF-8"><title>${titlePrefix} Arrears - ${data.empName}</title>${style}</head>
@@ -2457,7 +2412,6 @@
                     </tr>`;
                 });
                 
-                // Add totals row
                 htmlContent += `<tr class="total-row">
                     <td colspan="3"><strong>TOTAL</strong></td>
                     <td><strong>${Math.round(totalDuePay)}</strong></td>
@@ -2542,7 +2496,6 @@
                     </tr>`;
                 });
                 
-                // Add totals row
                 htmlContent += `<tr class="total-row">
                     <td colspan="3"><strong>TOTAL</strong></td>
                     <td><strong>${Math.round(totalDuePay)}</strong></td>
@@ -2576,7 +2529,7 @@
                 
                 <div class="page-break"></div>
                 
-                <!-- Last Page - Summary with font size 12 -->
+                <!-- Last Page - Summary -->
                 <div class="summary-section">
                     <h1>DEVI AHILYA VISHWAVIDYALAYA, INDORE</h1>
                     <h2>SUMMARY OF ARREARS FOR REVISED PAY</h2>
@@ -2591,6 +2544,9 @@
                             <th>UNC</th>
                             <th>Gross</th>
                             <th>Net Amount</th>
+                            <th class="tds-col">TDS @31.2%</th>
+                            <th class="totalded-col">Total Deduction</th>
+                            <th class="netpay-col">Net Payable</th>
                         </tr>
                         <tr>
                             <td>1</td>
@@ -2598,21 +2554,27 @@
                             <td>${formatIndianNumber(totalDiffTotal)}</td>
                             <td>${formatIndianNumber(totalDiffPfs)}</td>
                             <td>${formatIndianNumber(totalDiffUnc)}</td>
-                            <td>${formatIndianNumber(totalDiffTotal + totalDiffUnc)}</td>
-                            <td>${formatIndianNumber(totalDiffTotal - totalDiffPfs)}</td>
+                            <td>${formatIndianNumber(summaryGross)}</td>
+                            <td>${formatIndianNumber(summaryNetAmount)}</td>
+                            <td class="tds-col">${formatIndianNumber(summaryTds)}</td>
+                            <td class="totalded-col">${formatIndianNumber(summaryTotalDed)}</td>
+                            <td class="netpay-col"><strong>${formatIndianNumber(summaryNetPayable)}</strong></td>
                         </tr>
                         <tr class="total-row">
                             <td colspan="2"><strong>Total</strong></td>
                             <td><strong>${formatIndianNumber(totalDiffTotal)}</strong></td>
                             <td><strong>${formatIndianNumber(totalDiffPfs)}</strong></td>
                             <td><strong>${formatIndianNumber(totalDiffUnc)}</strong></td>
-                            <td><strong>${formatIndianNumber(totalDiffTotal + totalDiffUnc)}</strong></td>
-                            <td><strong>${formatIndianNumber(totalDiffTotal - totalDiffPfs)}</strong></td>
+                            <td><strong>${formatIndianNumber(summaryGross)}</strong></td>
+                            <td><strong>${formatIndianNumber(summaryNetAmount)}</strong></td>
+                            <td class="tds-col"><strong>${formatIndianNumber(summaryTds)}</strong></td>
+                            <td class="totalded-col"><strong>${formatIndianNumber(summaryTotalDed)}</strong></td>
+                            <td class="netpay-col"><strong>${formatIndianNumber(summaryNetPayable)}</strong></td>
                         </tr>
                     </table>
                     
                     <div class="amount-words">
-                        <p><strong>Net Amount in Words: ${convertToWords(totalDiffNet)} Rupees Only</strong></p>
+                        <p><strong>Net Payable in Words: ${convertToWords(summaryNetPayable)} Rupees Only</strong></p>
                     </div>
                 </div>
                 
@@ -2620,22 +2582,17 @@
                 </html>
             `;
             
-            // Create a new window/tab with the HTML content
             const printWindow = window.open('', '_blank');
             if (!printWindow) {
                 showMessage('❌ Pop-up blocker prevented opening print window. Please allow pop-ups for this site.', false);
                 return;
             }
             
-            // Write the HTML content to the new window
             printWindow.document.write(htmlContent);
             printWindow.document.close();
             
-            // Wait for content to load then print
             printWindow.onload = function() {
                 printWindow.print();
-                // Don't close the window immediately - let user see it
-                // printWindow.close(); // Optional: uncomment to close after print
             };
             
             showMessage(`✅ PDF generated. Print dialog should appear. Choose "Save as PDF" to download.`, true);
@@ -2704,7 +2661,6 @@
 
     // ========== startup popup ==========
     function showStartupAlert() {
-        // create a custom modal with nice sign
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay no-print';
         overlay.style.display = 'flex';
@@ -2739,7 +2695,6 @@
         document.getElementById('tableBody').appendChild(createEmptyRow(cpcType === '6thPay' ? '2006-01' : '2016-01'));
         toggleSixthPayIncrementUI();
         
-        // Set up modal action button
         document.getElementById('modalActionBtn').addEventListener('click', () => {
             if (selectedItemKey && currentModalCallback) {
                 currentModalCallback(selectedItemKey);
@@ -2748,7 +2703,6 @@
             }
         });
         
-        // Set up event listeners
         document.getElementById('cpcType').addEventListener('change', handleCPCChange);
         document.getElementById('addRowBtn').addEventListener('click', addNewRow);
         document.getElementById('copyPrevBtn').addEventListener('click', copyPreviousRowWithNextMonth);
@@ -2761,10 +2715,8 @@
         document.getElementById('downloadPDFBtn').addEventListener('click', downloadPDF);
         document.getElementById('clearBtn').addEventListener('click', clearForm);
         
-        // Add event listener for level field to update title
         document.getElementById('levelField').addEventListener('input', updateTitle);
         
-        // Show the custom popup alert on every load
         showStartupAlert();
         
         showInfo('👋 Welcome! For 7th Pay, click INC button in July/January rows under DUE/DRAWN columns to apply 3% increment. For 6th Pay, use the Apply Increment button.');
