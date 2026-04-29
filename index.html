@@ -657,7 +657,7 @@
         ✅ <strong>PF Rate (7th Pay):</strong> Select formula from dropdown - calculates PF S in both DUE and DRAWN columns.<br>
         ✅ <strong>Save/Load:</strong> Use the buttons in the increment row to save/load data from your browser. Modern popup for selection.<br>
         ✅ <strong>Clear Saved:</strong> Select which saved data to delete from the popup.<br>
-        ✅ <strong>Download PDF:</strong> Generates PDF from saved data with proper formatting. Summary includes TDS @31.2%, Total Deduction, and Net Payable columns.<br>
+        ✅ <strong>Download PDF:</strong> Generates PDF from saved data. Summary: TDS = Total Amount × 31.2% (rounded to nearest 10); Total Deduction = PFS + TDS; Net Payable = Total Amount − Total Deductions.<br>
         ✅ <strong>6th Pay Increment:</strong> When 6th Pay is selected, an "Apply Increment" button appears. It applies 3% increment on PAY for all July/January rows based on previous month's (PAY2+GP1). 
     </div>
 
@@ -2272,11 +2272,16 @@
             });
 
             // ── Derived summary values ──────────────────────────────────────
-            const summaryNetAmount   = totalDiffTotal - totalDiffPfs;           // Net Amount
-            const summaryGross       = totalDiffTotal + totalDiffUnc;           // Gross
-            const summaryTds         = Math.round(summaryNetAmount * 0.312 / 10) * 10; // TDS @31.2%, rounded to nearest 10
-            const summaryTotalDed    = totalDiffPfs + totalDiffUnc + summaryTds; // Total Deduction = PFS + UNC + TDS
-            const summaryNetPayable  = summaryGross - summaryTotalDed;           // Net Payable = Gross - Total Deduction
+            // TDS = Total Amount (totalDiffTotal) × 31.2%, rounded to nearest 10
+            const summaryTds        = Math.round(totalDiffTotal * 0.312 / 10) * 10;
+            // Total Deduction = PFS + TDS
+            const summaryTotalDed   = totalDiffPfs + summaryTds;
+            // Net Payable = Total Amount − Total Deductions
+            const summaryNetPayable = totalDiffTotal - summaryTotalDed;
+            // Net Amount (kept for display only — not used in deduction chain)
+            const summaryNetAmount  = totalDiffTotal - totalDiffPfs;
+            // Gross (kept for display only)
+            const summaryGross      = totalDiffTotal + totalDiffUnc;
             
             // Format dates for display
             const fromDateObj = new Date(data.fromDate);
@@ -2315,7 +2320,7 @@
                     .summary-section h3 { font-size: 12pt; font-weight: bold; margin: 5px 0; }
                     .summary-section p { font-size: 12pt; margin: 5px 0; }
                     .summary-table { width: 98%; margin: 20px auto; font-size: 11pt; border-collapse: collapse; border: 1px solid #000000; table-layout: fixed; }
-                    .summary-table th { padding: 6px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 11pt; }
+                    .summary-table th { padding: 6px 4px; border: 1px solid #000000; white-space: normal; font-size: 10pt; vertical-align: middle; }
                     .summary-table td { padding: 5px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 11pt; }
                     .summary-table td:first-child { font-weight: bold; width: 3.5%; }
                     .summary-table td:nth-child(2) { width: 16%; text-align: left; padding-left: 6px; }
@@ -2544,9 +2549,9 @@
                             <th>UNC</th>
                             <th>Gross</th>
                             <th>Net Amount</th>
-                            <th class="tds-col">TDS @31.2%</th>
-                            <th class="totalded-col">Total Deduction</th>
-                            <th class="netpay-col">Net Payable</th>
+                            <th class="tds-col">TDS @31.2%<br>(Total×0.312)</th>
+                            <th class="totalded-col">Total Deduction<br>(PFS+TDS)</th>
+                            <th class="netpay-col">Net Payable<br>(Total−Ded.)</th>
                         </tr>
                         <tr>
                             <td>1</td>
