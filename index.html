@@ -2283,7 +2283,7 @@
             // Gross (kept for display only)
             const summaryGross      = totalDiffTotal + totalDiffUnc;
             const roundToNearestTen = value => Math.round(value / 10) * 10;
-            const firstInstalmentTotal = roundToNearestTen(totalDiffTotal / 3);
+            const firstInstalmentTotal = Math.round(totalDiffTotal / 3);
             const firstInstalmentPfs = roundToNearestTen(totalDiffPfs / 3);
             const firstInstalmentUnc = firstInstalmentPfs;
             const firstInstalmentGross = firstInstalmentTotal + firstInstalmentUnc;
@@ -2612,7 +2612,7 @@
                         <tr>
                             <th>SNo.</th>
                             <th>Name of Faculty</th>
-                            <th>1st Instalment Total Amount<br>(Total Amount / 3)</th>
+                            <th>1st Instalment Total Amount<br>(Total Amount / 3 rounded to nearest rupee)</th>
                             <th>1st Instalment PFS<br>(PFS / 3)</th>
                             <th>1st Instalment UNC</th>
                             <th>Gross Total<br>(Total + UNC)</th>
