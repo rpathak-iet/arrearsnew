@@ -2282,6 +2282,14 @@
             const summaryNetAmount  = totalDiffTotal - totalDiffPfs;
             // Gross (kept for display only)
             const summaryGross      = totalDiffTotal + totalDiffUnc;
+            const roundToNearestTen = value => Math.round(value / 10) * 10;
+            const firstInstalmentTotal = roundToNearestTen(totalDiffTotal / 3);
+            const firstInstalmentPfs = roundToNearestTen(totalDiffPfs / 3);
+            const firstInstalmentUnc = firstInstalmentPfs;
+            const firstInstalmentGross = firstInstalmentTotal + firstInstalmentUnc;
+            const firstInstalmentNet = firstInstalmentTotal - firstInstalmentPfs;
+            const firstInstalmentTax = roundToNearestTen(firstInstalmentTotal * 0.312);
+            const firstInstalmentPayable = firstInstalmentNet - firstInstalmentTax;
             
             // Format dates for display
             const fromDateObj = new Date(data.fromDate);
@@ -2332,6 +2340,18 @@
                     .summary-table td:nth-child(8) { width: 12%; }
                     .summary-table td:nth-child(9) { width: 14%; }
                     .summary-table td:nth-child(10) { width: 13%; }
+                    .instalment-table { width: 100%; margin: 20px auto; font-size: 9pt; border-collapse: collapse; border: 1px solid #000000; table-layout: fixed; }
+                    .instalment-table th { padding: 6px 4px; border: 1px solid #000000; white-space: normal; font-size: 8pt; line-height: 1.2; vertical-align: middle; }
+                    .instalment-table td { padding: 5px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 9pt; }
+                    .instalment-table td:first-child { width: 4%; font-weight: bold; }
+                    .instalment-table td:nth-child(2) { width: 18%; text-align: left; padding-left: 6px; }
+                    .instalment-table td:nth-child(3),
+                    .instalment-table td:nth-child(4),
+                    .instalment-table td:nth-child(5),
+                    .instalment-table td:nth-child(6),
+                    .instalment-table td:nth-child(7),
+                    .instalment-table td:nth-child(8),
+                    .instalment-table td:nth-child(9) { width: 11.14%; }
                     .amount-words { margin-top: 20px; padding: 10px; border-top: 1px solid #000000; font-size: 12pt; text-align: center; white-space: nowrap; }
                     .page-break { page-break-after: always; }
                     .tds-col { background-color: #fff8dc; }
@@ -2578,6 +2598,50 @@
                     <div class="amount-words">
                         <p><strong>Net Payable in Words: ${convertToWords(summaryNetPayable)} Rupees Only</strong></p>
                     </div>
+                </div>
+
+                <div class="page-break"></div>
+
+                <!-- Final Page - First Instalment Summary -->
+                <div class="summary-section">
+                    <h1>DEVI AHILYA VISHWAVIDYALAYA, INDORE</h1>
+                    <h2>SUMMARY OF ARREARS FOR REVISED PAY</h2>
+                    <h3>Statement from ${fromFormatted} to ${toFormatted}</h3>
+
+                    <table class="instalment-table">
+                        <tr>
+                            <th>SNo.</th>
+                            <th>Name of Faculty</th>
+                            <th>1st Instalment Total Amount<br>(Total Amount / 3)</th>
+                            <th>1st Instalment PFS<br>(PFS / 3)</th>
+                            <th>1st Instalment UNC</th>
+                            <th>Gross Total<br>(Total + UNC)</th>
+                            <th>Net Amount<br>(Total Amount - PFS)</th>
+                            <th>Tax Deduction<br>(31.2% = 30% tax + 4% Cess)</th>
+                            <th>Payable Amount after Tax</th>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>${data.empName}</td>
+                            <td>${formatIndianNumber(firstInstalmentTotal)}</td>
+                            <td>${formatIndianNumber(firstInstalmentPfs)}</td>
+                            <td>${formatIndianNumber(firstInstalmentUnc)}</td>
+                            <td>${formatIndianNumber(firstInstalmentGross)}</td>
+                            <td>${formatIndianNumber(firstInstalmentNet)}</td>
+                            <td>${formatIndianNumber(firstInstalmentTax)}</td>
+                            <td><strong>${formatIndianNumber(firstInstalmentPayable)}</strong></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="2"><strong>Total</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentTotal)}</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentPfs)}</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentUnc)}</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentGross)}</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentNet)}</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentTax)}</strong></td>
+                            <td><strong>${formatIndianNumber(firstInstalmentPayable)}</strong></td>
+                        </tr>
+                    </table>
                 </div>
                 
                 </body>
