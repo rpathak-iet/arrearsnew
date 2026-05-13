@@ -2340,9 +2340,9 @@
                     .summary-table td:nth-child(8) { width: 12%; }
                     .summary-table td:nth-child(9) { width: 14%; }
                     .summary-table td:nth-child(10) { width: 13%; }
-                    .instalment-table { width: 100%; margin: 20px auto; font-size: 9pt; border-collapse: collapse; border: 1px solid #000000; table-layout: fixed; }
-                    .instalment-table th { padding: 6px 4px; border: 1px solid #000000; white-space: normal; font-size: 8pt; line-height: 1.2; vertical-align: middle; }
-                    .instalment-table td { padding: 5px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 9pt; }
+                    .instalment-table { width: 100%; margin: 20px auto; font-size: 12pt; border-collapse: collapse; border: 1px solid #000000; table-layout: fixed; }
+                    .instalment-table th { padding: 6px 4px; border: 1px solid #000000; white-space: normal; font-size: 12pt; line-height: 1.2; vertical-align: middle; }
+                    .instalment-table td { padding: 5px 4px; border: 1px solid #000000; white-space: nowrap; font-size: 12pt; }
                     .instalment-table td:first-child { width: 4%; font-weight: bold; }
                     .instalment-table td:nth-child(2) { width: 18%; text-align: left; padding-left: 6px; }
                     .instalment-table td:nth-child(3),
@@ -2612,8 +2612,8 @@
                         <tr>
                             <th>SNo.</th>
                             <th>Name of Faculty</th>
-                            <th>1st Instalment Total Amount<br>(Total Amount / 3 rounded to nearest rupee)</th>
-                            <th>1st Instalment PFS<br>(PFS / 3 rounded to nearest rupee)</th>
+                            <th>1st Instalment<br>Total Amount</th>
+                            <th>1st Instalment PFS</th>
                             <th>1st Instalment UNC</th>
                             <th>Gross Total<br>(Total + UNC)</th>
                             <th>Net Amount<br>(Total Amount - PFS)</th>
@@ -2642,6 +2642,10 @@
                             <td><strong>${formatIndianNumber(firstInstalmentPayable)}</strong></td>
                         </tr>
                     </table>
+
+                    <div class="amount-words">
+                        <p><strong>1st Installment Net Amount Payable After Deducting PFS and TAX: ${convertToWords(firstInstalmentPayable)} Rupees Only</strong></p>
+                    </div>
                 </div>
                 
                 </body>
